@@ -275,7 +275,8 @@ def load_model(
             model = AutoModelForCausalLM.from_pretrained(
                 base_model,
                 config=config,
-                device_map=cfg.device_map,
+                device_map=device_map, #{'': f'cuda:{local_rank}'},
+                max_memory=max_memory, #{'': max_memory[local_rank]},
                 load_in_8bit=cfg.load_in_8bit and cfg.adapter is not None,
                 load_in_4bit=cfg.load_in_4bit and cfg.adapter is not None,
                 torch_dtype=cfg.torch_dtype,
