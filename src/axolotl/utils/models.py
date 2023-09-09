@@ -176,6 +176,14 @@ def load_model(
             bnb_4bit_quant_type="nf4",
         )
     try:
+        n_gpus = torch.cuda.device_count()
+        max_memory = f'{24000}MB'
+        max_memory = {i: max_memory for i in range(n_gpus)}
+        device_map = "auto"
+        local_rank = int(os.environ.get('LOCAL_RANK', '0'))
+
+        print("about to load")
+        
         if cfg.is_llama_derived_model and not cfg.trust_remote_code and not cfg.gptq:
             from transformers import LlamaForCausalLM
 
@@ -186,14 +194,6 @@ def load_model(
                 base_model_config,
                 **config_kwargs,
             )
-
-            n_gpus = torch.cuda.device_count()
-            max_memory = f'{24000}MB'
-            max_memory = {i: max_memory for i in range(n_gpus)}
-            device_map = "auto"
-            local_rank = int(os.environ.get('LOCAL_RANK', '0'))
-
-            print("about to load")
             
             model = LlamaForCausalLM.from_pretrained(
                 base_model,
@@ -235,15 +235,16 @@ def load_model(
             if cfg.gptq:
                 model = AutoModelForCausalLM.from_pretrained(
                     base_model,
-                    device_map=cfg.device_map,
-                    torch_dtype=cfg.torch_dtype,
+                    device_map=device_map, #{'': f'cuda:{local_rank}'},
+                    max_memory=max_memory, #{'': max_memory[local_rank]},
                     trust_remote_code=cfg.trust_remote_code or False,
                     **model_kwargs,
                 )
             else:
                 model = getattr(transformers, model_type).from_pretrained(
                     base_model,
-                    device_map=cfg.device_map,
+                    device_map=device_map, #{'': f'cuda:{local_rank}'},
+                    max_memory=max_memory, #{'': max_memory[local_rank]},
                     load_in_8bit=cfg.load_in_8bit and cfg.adapter is not None,
                     load_in_4bit=cfg.load_in_4bit and cfg.adapter is not None,
                     torch_dtype=cfg.torch_dtype,
