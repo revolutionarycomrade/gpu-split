@@ -608,7 +608,7 @@ def setup_trainer(cfg, train_dataset, eval_dataset, model, tokenizer, total_num_
             and cfg.load_in_8bit is not True
         )
         or False,
-        ddp_find_unused_parameters=False if cfg.ddp else None,
+        ddp_find_unused_parameters=False,
         group_by_length=cfg.group_by_length,
         report_to="wandb" if cfg.use_wandb else None,
         run_name=cfg.wandb_run_id if cfg.use_wandb else None,
