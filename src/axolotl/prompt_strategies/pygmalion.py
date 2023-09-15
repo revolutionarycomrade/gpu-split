@@ -53,7 +53,7 @@ class PygmalionPromptTokenizingStrategy(PromptTokenizingStrategy):
                 )
                 # everything from this is masked out from the labels
                 labels = [IGNORE_TOKEN_ID] * len(res["input_ids"])
-            elif role == "bot":
+            elif role == "bot" or role == "gpt":
                 prefix = "<|model|>"
                 res = self._tokenize(
                     prefix + " " + message.strip(),
