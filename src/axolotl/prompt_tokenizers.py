@@ -357,12 +357,17 @@ class ShareGPTPromptTokenizingStrategy(PromptTokenizingStrategy):
         result, current_len = tokenize_prompt_default()
         user_token = self._get_user_token()
         assistant_token = self._get_assistant_token()
+
+        # Set custom roles if provided
+        if "roles" in prompt:
+            self.prompter._conversation.roles = prompt["roles"]
+
         try:
             for _, part in enumerate(
                 self.prompter.build_prompt(self.get_conversation_thread(prompt))
             ):
                 if isinstance(part, tuple):
-                    if part[0] == "USER:":
+                    if part[0] == self.prompter._conversation.roles[0] + ":":
                         part = part[0] + part[1] if not user_token else part[1]
                         # this is still the user query, we should
                         res = self._tokenize(
@@ -374,7 +379,7 @@ class ShareGPTPromptTokenizingStrategy(PromptTokenizingStrategy):
                             res["input_ids"] = [user_token, *res["input_ids"]]
                         # everything from this is masked out from the labels
                         labels = [IGNORE_TOKEN_ID] * len(res["input_ids"])
-                    elif part[0] == "ASSISTANT:":
+                    elif part[0] == self.prompter._conversation.roles[1] + ":":
                         # TODO label assistant token/tokens w/ IGNORE_TOKEN_ID
                         part = part[0] + part[1] if not assistant_token else part[1]
                         # this should be the assistent response, should end with an eos token
