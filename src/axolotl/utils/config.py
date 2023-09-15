@@ -25,9 +25,11 @@ def choose_device(cfg):
             return "cpu"
 
     cfg.device = get_device()
-    if cfg.device_map != "auto":
+    if cfg.world_size == 1:
+        cfg.device_map = "auto"
+    else:
         if cfg.device.startswith("cuda"):
-            cfg.device_map = {"": cfg.local_rank}
+            cfg.device_map = {"": torch.cuda.current_device()}
         else:
             cfg.device_map = {"": cfg.device}
 
@@ -48,6 +50,8 @@ def normalize_config(cfg):
     )
     cfg.world_size = int(os.environ.get("WORLD_SIZE", 1))
     cfg.local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    cfg.eval_table_size = cfg.eval_table_size or 0
+    cfg.eval_table_max_new_tokens = cfg.eval_table_max_new_tokens or 128
     choose_device(cfg)
     cfg.ddp = cfg.ddp if cfg.ddp is not None else cfg.world_size != 1
     if cfg.ddp:
@@ -190,6 +194,10 @@ def validate_config(cfg):
     if cfg.pretraining_dataset and cfg.group_by_length:
         LOG.warning(
             "You probably want to disable group_by_length as it will force a streamed dataset to download completely."
+        )
+    if cfg.pretraining_dataset and not cfg.max_steps:
+        raise ValueError(
+            "max_steps must be set when using iterable pretraining_dataset, Trainer can't infer length and schedule optimizer/learning rate without it!"
         )
 
     if any([cfg.adam_beta1, cfg.adam_beta2, cfg.adam_epsilon]) and (
