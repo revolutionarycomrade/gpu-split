@@ -231,6 +231,17 @@ def load_model(
         #         device=cfg.device,
         #     )
         #     model.train() # sets to train instead of eval mode
+        elif model_type == "MixFormerSequentialForCausalLM":
+            from axolotl.models.phi import MixFormerSequentialForCausalLM
+
+            model = MixFormerSequentialForCausalLM.from_pretrained(
+                base_model,
+                device_map=cfg.device_map,
+                load_in_8bit=cfg.load_in_8bit and cfg.adapter is not None,
+                load_in_4bit=cfg.load_in_4bit and cfg.adapter is not None,
+                torch_dtype=cfg.torch_dtype,
+                **model_kwargs,
+            )
         elif model_type and not cfg.trust_remote_code:
             if cfg.gptq:
                 model = AutoModelForCausalLM.from_pretrained(
@@ -303,7 +314,10 @@ def load_model(
         if cfg.resize_token_embeddings_to_32x
         else len(tokenizer)
     )
-    model.resize_token_embeddings(embeddings_len)
+    if model.get_input_embeddings().num_embeddings < embeddings_len:
+        model.resize_token_embeddings(embeddings_len)
+    else:
+        model.tie_weights()
 
     if (
         hasattr(model.config, "max_position_embeddings")
