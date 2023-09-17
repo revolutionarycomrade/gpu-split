@@ -192,7 +192,7 @@ def load_model(
     try:
         n_gpus = torch.cuda.device_count()
         max_memory = f'{24000}MB'
-        max_memory = {0: '24000MB', 1: '23000MB'} #{i: max_memory for i in range(n_gpus)}
+        max_memory = {0: '24000MB', 1: '23500MB'} #{i: max_memory for i in range(n_gpus)}
         device_map = "auto"
         local_rank = int(os.environ.get('LOCAL_RANK', '0'))
 
